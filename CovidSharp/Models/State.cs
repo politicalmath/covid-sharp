@@ -25,12 +25,10 @@ namespace CovidSharp.Models
     {
         public StateBase StateBase { get; set; }
         public List<StateDay> CovidData { get; set; }
-        public List<List<CalculatedStateValue>> ProcessedValues { get; set; }
         public State(StateBase sBase)
         {
             StateBase = sBase;
         }
-
     }
 
    

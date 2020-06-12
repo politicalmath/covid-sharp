@@ -84,6 +84,5 @@ namespace CovidSharp.CovidTrack.Models
 
         [JsonProperty("hash")]
         public string Hash { get; set; }
-
     }
 }
