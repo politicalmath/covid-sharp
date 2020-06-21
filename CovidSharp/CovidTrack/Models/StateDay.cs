@@ -46,5 +46,4 @@ namespace CovidSharp.CovidTrack.Models
         [JsonProperty("grade")]
         public string Grade { get; set; }
     }
-
 }

@@ -23,12 +23,12 @@ namespace CovidSharpUi
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        private MainViewModel _vm;
+        public MainViewModel ViewModel;
         public MainPage()
         {
             this.InitializeComponent();
-            _vm = new MainViewModel();
-            this.DataContext = _vm;
+            ViewModel = new MainViewModel();
+            this.DataContext = ViewModel;
 
         }
     }

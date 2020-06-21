@@ -5,10 +5,65 @@
     xmlns:local="using:CovidSharpUi"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:converters="using:Microsoft.Toolkit.Uwp.UI.Converters"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Page.Resources>
+        <converters:BoolToObjectConverter x:Key="BoolToVisibilityConverter" TrueValue="Visible" FalseValue="Collapsed"/>
+    </Page.Resources>
 
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="54*"/>
+            <ColumnDefinition Width="69*"/>
+            <ColumnDefinition Width="133*"/>
+        </Grid.ColumnDefinitions>
+        <ScrollViewer >
+            <StackPanel Margin="8">
+                <TextBlock x:Name="dataSourceHeader" Text="Data Source" TextWrapping="Wrap" FontFamily="Segoe UI Semibold" FontSize="24"/>
+                <StackPanel>
+                    <RadioButton x:Name="covidTrackSelection" Content="Covid Tracker" IsChecked="{x:Bind ViewModel.UseCovidDataSource, Mode=TwoWay}"/>
+                    <RadioButton x:Name="nytDataSelection" Content="New York Times Data" IsChecked="{x:Bind ViewModel.UseNytDataSource, Mode=TwoWay}"/>
+                </StackPanel>
+                <TextBox Header="State Selection (comma seperated)" PlaceholderText="to select all states, leave empty" Text="{x:Bind ViewModel.StateSelectionString, Mode=TwoWay}"/>
+                <Button Content="Get Data" Margin="0,16,0,0" HorizontalAlignment="Stretch" Command="{x:Bind ViewModel.GetDataCommand}"/>
+                <ProgressBar IsIndeterminate="True" Visibility="{x:Bind ViewModel.IsCollectingData, Converter={StaticResource BoolToVisibilityConverter}}" Margin="0,8,0,0" />
+            </StackPanel>
+        </ScrollViewer>
+        <ScrollViewer Grid.Column="1" >
+            <StackPanel Margin="8">
+                <TextBlock x:Name="Colation" Text="Manage Data" TextWrapping="Wrap" FontFamily="Segoe UI Semibold" FontSize="24"/>
+                <TextBlock Text="Include the following metrics in the export" TextWrapping="Wrap" FontFamily="Segoe UI" FontSize="16" Margin="0,16,0,0"/>
+                <CheckBox x:Name="deathsCheckbox" Content="Deaths" d:LayoutOverrides="LeftPosition, RightPosition"/>
+                <CheckBox x:Name="casesCheckbox" Content="Cases"/>
+                <CheckBox x:Name="testsCheckbox" Content="Tests"/>
+                <CheckBox x:Name="positivePercentCheck" Content="% positive"/>
+                <CheckBox x:Name="hospitalCheckbox" Content="Hospitalizations (current)"/>
+                <CheckBox x:Name="newHospitalsCheckbox" Content="Hospitalizations (new)"/>
+
+                <TextBlock Text="Cumulative or Daily" TextWrapping="Wrap" FontFamily="Segoe UI" FontSize="16" Margin="0,16,0,0"/>
+                <RadioButton x:Name="dailyData" Content="Daily" />
+                <RadioButton x:Name="cumulativeData" Content="Cumulative" />
+
+                <TextBlock Text="Perform the following calculations on the data" TextWrapping="Wrap" FontFamily="Segoe UI" FontSize="16" Margin="0,16,0,0"/>
+                <CheckBox x:Name="perCapitaCheck" Content="per capita"/>
+                <CheckBox x:Name="rollingAvgCheck" Content="rolling average"/>
+                <TextBox Text="" PlaceholderText="default value is 7" Header="# of days for rolling average" InputScope="Number"/>
+                <Button Content="Manage Data" Margin="0,16,0,0" HorizontalAlignment="Stretch" Command="{x:Bind ViewModel.ParseDataCommand}"/>
+
+
+            </StackPanel>
+        </ScrollViewer>
+        <ScrollViewer Grid.Column="2" >
+            <StackPanel Margin="8">
+                <TextBlock x:Name="ExportHeader" Text="Export Data" TextWrapping="Wrap" FontFamily="Segoe UI Semibold" FontSize="24"/>
+                <TextBlock Text="Export Folder" TextWrapping="Wrap" FontSize="16" Margin="0,16,0,0"/>
+                <TextBlock Text="" TextWrapping="Wrap" FontSize="16"/>
+                <Button Content="Select Export Folder"/>
+                <CheckBox x:Name="rollingAvgCheck_Copy" Content="export all data in single file" Margin="0,8,0,0"/>
+                <Button Content="Export Files" Margin="0,8,0,0" Command="{x:Bind ViewModel.ExportDataCommand}"/>
+            </StackPanel>
+        </ScrollViewer>
 
     </Grid>
 </Page>
