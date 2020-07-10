@@ -13,6 +13,7 @@ namespace CovidSharpUi.Enums
         Tests, 
         PercentPositive,
         HospitalCurrent,
-        HospitalNew
+        HospitalNew, 
+        CaseJerk
     }
 }

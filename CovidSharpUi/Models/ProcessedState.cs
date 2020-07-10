@@ -28,47 +28,53 @@ namespace CovidSharpUi.Models
                 List<CalculatedValue> processedValues = new List<CalculatedValue>();
                 // 2) Look at the metric, pick out the appropriate data for that metric (and give it a name)
                 List<CalculatedValue> allValues = new List<CalculatedValue>();
-                string namedMetric = "";
+                string namedMetric = "cumulative-";
 
                 switch (metric)
                 {
                     case Metrics.Deaths:
+
+                        namedMetric += "deaths";
                         foreach (StateDay sd in CoreStateData.CovidData)
                         {
-                            namedMetric = "deaths";
                             allValues.Add(new CalculatedValue(namedMetric, Convert.ToDouble(sd.Death), sd.Date));
                         }
                         break;
                     case Metrics.Cases:
+
+                        namedMetric += "positives";
                         foreach (StateDay sd in CoreStateData.CovidData)
                         {
-                            namedMetric = "positives";
                             allValues.Add(new CalculatedValue(namedMetric, Convert.ToDouble(sd.Positive), sd.Date));
                         }
                         break;
                     case Metrics.Tests:
+                        namedMetric += "tests";
                         foreach (StateDay sd in CoreStateData.CovidData)
-                        {
-                            namedMetric = "tests";
+                        {                            
                             double tests = Convert.ToDouble(sd.Positive) + Convert.ToDouble(sd.Negative);
                             allValues.Add(new CalculatedValue(namedMetric, tests, sd.Date));
                         }
                         break;
                     case Metrics.PercentPositive:
+                        namedMetric += "percentPositive";
                         foreach (StateDay sd in CoreStateData.CovidData)
-                        {
-                            namedMetric = "percentPositive";
+                        {                            
                             double percentPositive = Convert.ToDouble(sd.Positive) / Convert.ToDouble(sd.Negative + sd.Positive);
                             allValues.Add(new CalculatedValue(namedMetric, percentPositive, sd.Date));
                         }
                         break;
                     case Metrics.HospitalCurrent:
+                        namedMetric += "currentHosp";
                         foreach (StateDay sd in CoreStateData.CovidData)
-                        {
-                            namedMetric = "currentHosp";
+                        {                            
                             double currentHosp = sd.HospitalizedCurrently != null ? Convert.ToDouble(sd.HospitalizedCurrently) : 0;
                             allValues.Add(new CalculatedValue(namedMetric, currentHosp, sd.Date));
                         }
+                        break;
+                    case Metrics.CaseJerk:
+                        namedMetric += "caseJerk";
+
                         break;
                     default:
                         break;
@@ -103,7 +109,7 @@ namespace CovidSharpUi.Models
             {
                 List<CalculatedValue> processedValues = new List<CalculatedValue>();
                 List<CalculatedValue> preProcess = new List<CalculatedValue>();
-                string namedMetric = "daily-";
+                string namedMetric = "dailychange-";
 
                 switch (metric)
                 {
@@ -138,12 +144,16 @@ namespace CovidSharpUi.Models
                         }
                         break;
                     case Metrics.HospitalCurrent:
-                        namedMetric += "currentHosp";
+                        namedMetric += "currentHospital";
                         foreach (StateDay sd in CoreStateData.CovidData)
                         {                            
                             double currentHosp = sd.HospitalizedCurrently != null ? Convert.ToDouble(sd.HospitalizedCurrently) : 0;
                             preProcess.Add(new CalculatedValue(namedMetric, currentHosp, sd.Date));
                         }
+                        break;
+                    case Metrics.CaseJerk:
+                        namedMetric += "caseJerk";
+
                         break;
                     default:
                         break;
@@ -163,6 +173,19 @@ namespace CovidSharpUi.Models
                     {
                         var percentPos = GetPercentPositiveRollingAvg(cv.Date, rollingAverage);
                         averageValues.Add(new CalculatedValue(cv.MetricName + "-" + rollingAverage.ToString() + "dayavg", percentPos, cv.Date));
+                    }
+                    else if (cv.MetricName.Contains("currentHospital"))
+                    {
+                        var hospitalVals = preProcess.FindAll(val => val.Date.Date < cv.Date.Date && val.Date.Date >= comparativeValue.Date.Date);
+                        double allHospitalVals = 0;
+                        foreach(CalculatedValue otherCv in hospitalVals)
+                        {
+                            allHospitalVals += otherCv.Value;
+                        }
+
+                        allHospitalVals = allHospitalVals / rollingAverage;
+
+                        averageValues.Add(new CalculatedValue(cv.MetricName + "-" + rollingAverage.ToString() + "dayavg", allHospitalVals, cv.Date));
                     }
                     else
                     {

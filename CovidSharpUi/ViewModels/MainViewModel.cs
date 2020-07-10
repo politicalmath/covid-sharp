@@ -68,6 +68,8 @@ namespace CovidSharpUi.ViewModels
 
         public RelayCommand GetDataCommand { get; private set; }
         public RelayCommand ParseDataCommand { get; private set; }
+
+        public RelayCommand PickExportFolderCommand { get; private set; }
         public RelayCommand ExportDataCommand { get; private set; }
 
         public MainViewModel()
@@ -88,10 +90,11 @@ namespace CovidSharpUi.ViewModels
             IncludeTests = true;
             ProcessPerCapita = true;
             ProcessRollingAverage = true;
-            UseDailyData = true;
+            UseDailyData = false;
             
             GetDataCommand = new RelayCommand(new Action(GetData), CanExecuteGetDataCommand);
             ParseDataCommand = new RelayCommand(new Action(ProcessData), CanExecuteProcessDataCommand);
+            PickExportFolderCommand = new RelayCommand(new Action(PickExportFolder), CanExecuteExportDataCommand);
             ExportDataCommand = new RelayCommand(new Action(ExportData), CanExecuteExportDataCommand);
         }
         
@@ -160,6 +163,26 @@ namespace CovidSharpUi.ViewModels
             Status = "Data Processed!";
         }
 
+        private bool CanPickExportFolder()
+        {
+            return true;
+        }
+
+        public async void PickExportFolder()
+        {
+            Windows.Storage.ApplicationDataContainer localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
+
+            var picker = new Windows.Storage.Pickers.FolderPicker();
+            picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Desktop;
+            picker.FileTypeFilter.Add("*");
+
+            var folder = await picker.PickSingleFolderAsync();
+            if (folder != null)
+            {
+                Windows.Storage.AccessCache.StorageApplicationPermissions.FutureAccessList.AddOrReplace("ExportFolder", folder);
+            }
+        }
+
         private bool CanExecuteExportDataCommand()
         {
             return true;
@@ -169,18 +192,14 @@ namespace CovidSharpUi.ViewModels
         {
             Status = "Exporting Data...";
 
-            Windows.Storage.ApplicationDataContainer localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
+            var folder = await Windows.Storage.AccessCache.StorageApplicationPermissions.FutureAccessList.GetFolderAsync("ExportFolder");
 
-            var picker = new Windows.Storage.Pickers.FolderPicker();
-            picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Desktop;
-            picker.FileTypeFilter.Add("*");
-
-            var folder = await picker.PickSingleFolderAsync();
             //  https://docs.microsoft.com/en-us/windows/uwp/files/quickstart-using-file-and-folder-pickers
-            if (folder == null) return;
 
             DateTime startDate = new DateTime(2020, 3, 1);
-            var listOfFiles = ProcessedStateData.FirstOrDefault().OutputFiles;
+            var listOfFiles = ProcessedStateData?.FirstOrDefault()?.OutputFiles;
+            if (folder == null || listOfFiles == null) return;
+
             foreach (KeyValuePair<string, List<CalculatedValue>> kvp in listOfFiles)
             {
                 DateTime currentDate = startDate;

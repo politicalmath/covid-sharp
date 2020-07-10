@@ -31,5 +31,10 @@ namespace CovidSharpUi
             this.DataContext = ViewModel;
 
         }
+
+        private void DailyData_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

@@ -43,8 +43,8 @@
                 <CheckBox x:Name="hospitalCheckbox" Content="Hospitalizations (current)" IsChecked="{x:Bind ViewModel.IncludeCurrentHospitalizations, Mode=TwoWay}"/>
                 <CheckBox x:Name="newHospitalsCheckbox" Content="Hospitalizations (new)" IsChecked="{x:Bind ViewModel.IncludeNewHospitalizations, Mode=TwoWay}" />
 
-                <TextBlock Text="Cumulative or Daily" TextWrapping="Wrap" FontFamily="Segoe UI" FontSize="16" Margin="0,16,0,0"/>
-                <RadioButton x:Name="dailyData" Content="Daily" IsChecked="{x:Bind ViewModel.UseDailyData, Mode=TwoWay}" />
+                <TextBlock Text="Cumulative or Daily Change" TextWrapping="Wrap" FontFamily="Segoe UI" FontSize="16" Margin="0,16,0,0"/>
+                <RadioButton x:Name="dailyData" Content="Daily Change" IsChecked="{x:Bind ViewModel.UseDailyData, Mode=TwoWay}" Checked="DailyData_Checked" />
                 <RadioButton x:Name="cumulativeData" Content="Cumulative" IsChecked="{x:Bind ViewModel.UseCumeData, Mode=TwoWay}"/>
 
                 <TextBlock Text="Perform the following calculations on the data" TextWrapping="Wrap" FontFamily="Segoe UI" FontSize="16" Margin="0,16,0,0"/>
@@ -61,7 +61,7 @@
                 <TextBlock x:Name="ExportHeader" Text="Export Data" TextWrapping="Wrap" FontFamily="Segoe UI Semibold" FontSize="24"/>
                 <TextBlock Text="Export Folder" TextWrapping="Wrap" FontSize="16" Margin="0,16,0,0"/>
                 <TextBlock Text="" TextWrapping="Wrap" FontSize="16"/>
-                <Button Content="Select Export Folder"/>
+                <Button Content="Select Export Folder" Command="{x:Bind ViewModel.PickExportFolderCommand}"/>
                 <CheckBox x:Name="rollingAvgCheck_Copy" Content="export all data in single file" Margin="0,8,0,0"/>
                 <Button Content="Export Files" Margin="0,8,0,0" Command="{x:Bind ViewModel.ExportDataCommand}"/>
             </StackPanel>
