@@ -20,6 +20,8 @@ using Windows.Storage;
 using System.IO;
 using static CovidSharp.Utils.CsvUtility;
 using System.Globalization;
+using CovidSharp.owiData.Models;
+using CovidSharp.owiData;
 
 namespace CovidSharpUi.ViewModels
 {
@@ -27,18 +29,26 @@ namespace CovidSharpUi.ViewModels
     {
         private CsvUtility csvWriter { get; set; }
         public List<State> StateData { get; set; }
+        public List<OwidCountry> CountryData { get; set; }
         private CovidTrackService ctService { get; set; }
+        private OwidService owidService { get; set; }
         private List<ProcessedState> ProcessedStateData { get; set; }
+        private List<ProcessedCountry> ProcessedCountryData { get; set; }
 
 
         public bool UseCovidDataSource { get; set; }
         public bool UseNytDataSource { get; set; }
+        public bool UseOwidSource { get; set; }
         public bool IsCollectingData { get; set; }
         private bool isDataLoaded { get; set; }
-        private bool isDataProcessed {get; set;}
+        private bool isDataProcessed { get; set; }
+
+        public bool SortStatesByRegion { get; set; }
+        public bool SortCountriesByContinent { get; set; }
+        public bool FilterSmallCountries { get; set; }
 
         public string StateSelectionString { get; set; }
-        public List<StateBase> SelectedStates { get; set; } 
+        public List<StateBase> SelectedStates { get; set; }
 
         public bool IncludeDeaths { get; set; }
         public bool IncludeCases { get; set; }
@@ -76,9 +86,13 @@ namespace CovidSharpUi.ViewModels
         {
             csvWriter = new CsvUtility();
             StateData = new List<State>();
+            CountryData = new List<OwidCountry>();
 
             ProcessedStateData = new List<ProcessedState>();
+            ProcessedCountryData = new List<ProcessedCountry>();
+
             ctService = new CovidTrackService();
+            owidService = new OwidService();
             UseCovidDataSource = true;
             isDataLoaded = false;
             isDataProcessed = false;
@@ -91,13 +105,13 @@ namespace CovidSharpUi.ViewModels
             ProcessPerCapita = true;
             ProcessRollingAverage = true;
             UseDailyData = false;
-            
+
             GetDataCommand = new RelayCommand(new Action(GetData), CanExecuteGetDataCommand);
             ParseDataCommand = new RelayCommand(new Action(ProcessData), CanExecuteProcessDataCommand);
             PickExportFolderCommand = new RelayCommand(new Action(PickExportFolder), CanExecuteExportDataCommand);
             ExportDataCommand = new RelayCommand(new Action(ExportData), CanExecuteExportDataCommand);
         }
-        
+
         private bool CanExecuteGetDataCommand()
         {
             return true;
@@ -109,15 +123,39 @@ namespace CovidSharpUi.ViewModels
             Status = "Loading data...";
             IsCollectingData = true;
 
-            StateData.Clear();
-
-            var rawStateData = await ctService.GetHistoricStateData();
-            var stateBaseInfo = StatesConstants.GetStatesList();
-            foreach(StateBase sb in stateBaseInfo)
+            if (UseCovidDataSource)
             {
-                var newState = new State(sb);
-                newState.CovidData = rawStateData.FindAll(sd => sd.State.ToString().ToLower() == newState.StateBase.Code.ToString().ToLower());
-                StateData.Add(newState);
+
+                StateData.Clear();
+                var rawStateData = await ctService.GetHistoricStateData();
+                var stateBaseInfo = StatesConstants.GetStatesList();
+                foreach (StateBase sb in stateBaseInfo)
+                {
+                    var newState = new State(sb);
+                    newState.CovidData = rawStateData.FindAll(sd => sd.State.ToString().ToLower() == newState.StateBase.Code.ToString().ToLower());
+                    StateData.Add(newState);
+                }
+
+                if (SortStatesByRegion)
+                {
+                    StateData = PerformStateSortByRegion(StateData);
+                }
+
+            }
+            else if (UseOwidSource)
+            {
+                CountryData.Clear();
+                CountryData = await owidService.GetAllWorldData();
+
+                if (SortCountriesByContinent)
+                {
+                    CountryData = PerformCountrySort(CountryData);
+                }
+
+                if (FilterSmallCountries)
+                {
+                    CountryData = PerformSmallCountryFilter(CountryData);
+                }
             }
 
             IsCollectingData = false;
@@ -135,6 +173,8 @@ namespace CovidSharpUi.ViewModels
         {
             Status = "Processing data...";
             ProcessedStateData.Clear();
+            ProcessedCountryData.Clear();
+
             List<Metrics> metrics = new List<Metrics>();
             if (IncludeDeaths) metrics.Add(Metrics.Deaths);
             if (IncludeCases) metrics.Add(Metrics.Cases);
@@ -143,19 +183,45 @@ namespace CovidSharpUi.ViewModels
             if (IncludeCurrentHospitalizations) metrics.Add(Metrics.HospitalCurrent);
             if (IncludeNewHospitalizations) metrics.Add(Metrics.HospitalNew);
 
-            foreach (State s in StateData) {
-                var processedState = new ProcessedState(s);
-                if (UseDailyData) {
-                    int rollingAvg = 7;
-                    var parseSuccess= Int32.TryParse(RollingAverageNumber, out rollingAvg);
-                    if (rollingAvg == 0) rollingAvg = 7;
-                    processedState.ProcessDailyData(metrics, ProcessRollingAverage, rollingAvg, ProcessPerCapita);
-                } else if (UseCumeData)
+            if (UseCovidDataSource)
+            {
+                foreach (State s in StateData)
                 {
-                    processedState.ProcessCumulativeData(metrics, ProcessPerCapita);
-                }
+                    var processedState = new ProcessedState(s);
+                    if (UseDailyData)
+                    {
+                        int rollingAvg = 7;
+                        var parseSuccess = Int32.TryParse(RollingAverageNumber, out rollingAvg);
+                        if (rollingAvg == 0) rollingAvg = 7;
+                        processedState.ProcessDailyData(metrics, ProcessRollingAverage, rollingAvg, ProcessPerCapita);
+                    }
+                    else if (UseCumeData)
+                    {
+                        processedState.ProcessCumulativeData(metrics, ProcessPerCapita);
+                    }
 
-                ProcessedStateData.Add(processedState);
+                    ProcessedStateData.Add(processedState);
+                }
+            }
+            else if (UseOwidSource)
+            {
+                foreach (OwidCountry c in CountryData)
+                {
+                    var processedCountry = new ProcessedCountry(c);
+                    if (UseDailyData)
+                    {
+                        int rollingAvg = 7;
+                        var parseSuccess = Int32.TryParse(RollingAverageNumber, out rollingAvg);
+                        if (rollingAvg == 0) rollingAvg = 7;
+                        processedCountry.ProcessDailyData(metrics, ProcessRollingAverage, rollingAvg, ProcessPerCapita);
+                    }
+                    else if (UseCumeData)
+                    {
+                        processedCountry.ProcessCumulativeData(metrics, ProcessPerCapita);
+                    }
+
+                    ProcessedCountryData.Add(processedCountry);
+                }
             }
 
             isDataProcessed = true;
@@ -197,7 +263,15 @@ namespace CovidSharpUi.ViewModels
             //  https://docs.microsoft.com/en-us/windows/uwp/files/quickstart-using-file-and-folder-pickers
 
             DateTime startDate = new DateTime(2020, 3, 1);
-            var listOfFiles = ProcessedStateData?.FirstOrDefault()?.OutputFiles;
+            Dictionary<string, List<CalculatedValue>> listOfFiles = null;
+            if (UseCovidDataSource)
+                listOfFiles = ProcessedStateData?.FirstOrDefault()?.OutputFiles;
+            else if (UseOwidSource)
+            {
+                listOfFiles = ProcessedCountryData?.FirstOrDefault()?.OutputFiles;
+                startDate = new DateTime(2020, 1, 1);
+            }
+
             if (folder == null || listOfFiles == null) return;
 
             foreach (KeyValuePair<string, List<CalculatedValue>> kvp in listOfFiles)
@@ -212,23 +286,42 @@ namespace CovidSharpUi.ViewModels
                 {
                     CsvRow headerRow = new CsvRow();
                     headerRow.Add("Date");
-                    foreach (ProcessedState ps in ProcessedStateData)
-                        headerRow.Add(ps.CoreStateData.StateBase.Code.ToString());
-
+                    if (UseCovidDataSource)
+                    {
+                        foreach (ProcessedState ps in ProcessedStateData)
+                            headerRow.Add(ps.CoreStateData.StateBase.Code.ToString());
+                    }
+                    else if (UseOwidSource)
+                    {
+                        foreach (ProcessedCountry pc in ProcessedCountryData)
+                            headerRow.Add(pc.CoreCountryData.CountryName);
+                    }
                     dataWriter.WriteRow(headerRow);
 
-                    while(currentDate.Date <= latestDate)
-                    {                        
+                    while (currentDate.Date <= latestDate)
+                    {
                         CsvRow nextRow = new CsvRow();
                         nextRow.Add(currentDate.Date.ToString("MM/dd/yyyy", CultureInfo.InvariantCulture));
-                        foreach(ProcessedState ps in ProcessedStateData)
+                        if (UseCovidDataSource)
                         {
-                            var calcVals = ps.OutputFiles[kvp.Key].FirstOrDefault(calcv => calcv.Date.Date == currentDate.Date);
-                            if (calcVals == null)
-                                nextRow.Add("0");
-                            else
+                            foreach (ProcessedState ps in ProcessedStateData)
                             {
-                                nextRow.Add(calcVals.Value.ToString("F3", CultureInfo.InvariantCulture));
+                                var calcVals = ps.OutputFiles[kvp.Key].FirstOrDefault(calcv => calcv.Date.Date == currentDate.Date);
+                                if (calcVals == null)
+                                    nextRow.Add("0");
+                                else
+                                    nextRow.Add(calcVals.Value.ToString("F3", CultureInfo.InvariantCulture));
+                            }
+                        }
+                        else if (UseOwidSource)
+                        {
+                            foreach (ProcessedCountry pc in ProcessedCountryData)
+                            {
+                                var calcVals = pc.OutputFiles[kvp.Key].FirstOrDefault(calcv => calcv.Date.Date == currentDate.Date);
+                                if (calcVals == null)
+                                    nextRow.Add("0");
+                                else
+                                    nextRow.Add(calcVals.Value.ToString("F3", CultureInfo.InvariantCulture));
                             }
                         }
                         dataWriter.WriteRow(nextRow);
@@ -241,6 +334,87 @@ namespace CovidSharpUi.ViewModels
 
         }
 
+        private List<State> PerformStateSortByRegion(List<State> unsortedStates)
+        {
+            List<State> sortedStates = new List<State>();
+            // Midwest states
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.IA));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.IL));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MI));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MN));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MO));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.OH));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.WI));
+            // Mountain States
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.CO));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.ID));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NV));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.UT));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.WY));
+            // Northeast States
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.CT));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.DC));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.DE));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MA));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MD));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NJ));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NY));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NY));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NY));
+            // Southern Border
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.AL));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.AZ));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.CA));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.FL));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.LA));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MS));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NM));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.TX));
+
+            // Mid South
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.AR));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.GA));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.KY));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NC));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.SC));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.TN));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.VA));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.WV));
+
+            // Plain States
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.KS));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MT));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.ND));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NE));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.OK));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.SD));
+
+            //West Coast
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.CA));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.OR));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.WA));
+
+            // Upper Northeast + AK + HI
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NH));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.VT));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.ME));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.AK));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.HI));
+
+            return sortedStates;
+
+        }
+
+        private List<OwidCountry> PerformCountrySort(List<OwidCountry> unsortedCountries)
+        {
+            var sortedCountries = unsortedCountries.OrderBy(country => country.Continent).ToList();
+            return sortedCountries;
+        }
+        private List<OwidCountry> PerformSmallCountryFilter(List<OwidCountry> unfilteredCountries)
+        {
+            var sortedCountries = unfilteredCountries.Where(country => country.Population > 20000000).ToList();
+            return sortedCountries;
+        }
     }
 
 }

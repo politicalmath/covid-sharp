@@ -7,7 +7,7 @@ using CovidSharp.Interfaces;
 
 namespace CovidSharp.CovidTrack
 {
-    public static class SourceConfig
+    public static class CovidTrackingConfig
     {
         // Source: https://covidtracking.com/api
 

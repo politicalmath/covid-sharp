@@ -26,7 +26,7 @@ namespace CovidSharp.CovidTrack
         public async Task<ApiStatus> GetApiStatus()
         {
             using(var client = new HttpClient()) {
-                var sourceUrl = SourceConfig.BaseUrlString + SourceConfig.ApiStatusString;
+                var sourceUrl = CovidTrackingConfig.BaseUrlString + CovidTrackingConfig.ApiStatusString;
                 var targetContent = await client.GetStringAsync(sourceUrl);
                 return JsonConvert.DeserializeObject<ApiStatus>(targetContent, serializeSettings);
             }
@@ -36,7 +36,7 @@ namespace CovidSharp.CovidTrack
         {
             using (var client = new HttpClient())
             {
-                var sourceUrl = SourceConfig.BaseUrlString + SourceConfig.HistoricUsString;
+                var sourceUrl = CovidTrackingConfig.BaseUrlString + CovidTrackingConfig.HistoricUsString;
                 var targetContent = await client.GetStringAsync(sourceUrl);
                 return JsonConvert.DeserializeObject<List<UsDay>>(targetContent, serializeSettings);
             }
@@ -46,7 +46,7 @@ namespace CovidSharp.CovidTrack
         {
             using (var client = new HttpClient())
             {
-                var sourceUrl = SourceConfig.BaseUrlString + SourceConfig.LatestUsString;
+                var sourceUrl = CovidTrackingConfig.BaseUrlString + CovidTrackingConfig.LatestUsString;
                 var targetContent = await client.GetStringAsync(sourceUrl);
                 return JsonConvert.DeserializeObject<List<UsDay>>(targetContent, serializeSettings);
             }
@@ -56,7 +56,7 @@ namespace CovidSharp.CovidTrack
         {
             using (var client = new HttpClient())
             {
-                var sourceUrl = SourceConfig.UsWithDateString(date);
+                var sourceUrl = CovidTrackingConfig.UsWithDateString(date);
                 var targetContent = await client.GetStringAsync(sourceUrl);
                 return JsonConvert.DeserializeObject<UsDay>(targetContent, serializeSettings);
             }
@@ -66,7 +66,7 @@ namespace CovidSharp.CovidTrack
         {
             using (var client = new HttpClient())
             {
-                var sourceUrl = SourceConfig.BaseUrlString + SourceConfig.AllStateMetaString;
+                var sourceUrl = CovidTrackingConfig.BaseUrlString + CovidTrackingConfig.AllStateMetaString;
                 var targetContent = await client.GetStringAsync(sourceUrl);
                 return JsonConvert.DeserializeObject<List<StateMetadata>>(targetContent, serializeSettings);
             }
@@ -76,7 +76,7 @@ namespace CovidSharp.CovidTrack
         {
             using (var client = new HttpClient())
             {
-                var sourceUrl = SourceConfig.StateMeta(stateCode);
+                var sourceUrl = CovidTrackingConfig.StateMeta(stateCode);
                 var targetContent = await client.GetStringAsync(sourceUrl);
                 return JsonConvert.DeserializeObject<StateMetadata>(targetContent, serializeSettings);
             }
@@ -86,10 +86,10 @@ namespace CovidSharp.CovidTrack
         {
             using (var client = new HttpClient())
             {
-                var sourceUrl = SourceConfig.BaseUrlString + SourceConfig.HistoricStatesString;
+                var sourceUrl = CovidTrackingConfig.BaseUrlString + CovidTrackingConfig.HistoricStatesString;
                 if(stateCode != StateCode.None)
                 {
-                    sourceUrl = SourceConfig.HistoricStateString(stateCode);
+                    sourceUrl = CovidTrackingConfig.HistoricStateString(stateCode);
                 }
                 var targetContent = await client.GetStringAsync(sourceUrl);
                 return JsonConvert.DeserializeObject<List<StateDay>>(targetContent, serializeSettings);
@@ -100,7 +100,7 @@ namespace CovidSharp.CovidTrack
         {
             using (var client = new HttpClient())
             {
-                var sourceUrl = SourceConfig.BaseUrlString + SourceConfig.LatestStatesString;
+                var sourceUrl = CovidTrackingConfig.BaseUrlString + CovidTrackingConfig.LatestStatesString;
                 var targetContent = await client.GetStringAsync(sourceUrl);
                 return JsonConvert.DeserializeObject<List<StateDay>>(targetContent, serializeSettings);
             }
@@ -110,7 +110,7 @@ namespace CovidSharp.CovidTrack
         {
             using (var client = new HttpClient())
             {
-                var sourceUrl = SourceConfig.LatestStateString(stateCode);
+                var sourceUrl = CovidTrackingConfig.LatestStateString(stateCode);
                 var targetContent = await client.GetStringAsync(sourceUrl);
                 return JsonConvert.DeserializeObject<StateDay>(targetContent, serializeSettings);
             }
@@ -120,7 +120,7 @@ namespace CovidSharp.CovidTrack
         {
             using (var client = new HttpClient())
             {
-                var sourceUrl = SourceConfig.StateWithDateString(stateCode, date);
+                var sourceUrl = CovidTrackingConfig.StateWithDateString(stateCode, date);
                 var targetContent = await client.GetStringAsync(sourceUrl);
                 return JsonConvert.DeserializeObject<StateDay>(targetContent, serializeSettings);
             }
