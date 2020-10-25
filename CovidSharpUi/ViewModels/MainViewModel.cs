@@ -147,6 +147,8 @@ namespace CovidSharpUi.ViewModels
                 CountryData.Clear();
                 CountryData = await owidService.GetAllWorldData();
 
+                CountryData = CountryData.OrderBy(c => c.CountryName).ToList();
+
                 if (SortCountriesByContinent)
                 {
                     CountryData = PerformCountrySort(CountryData);
@@ -340,6 +342,7 @@ namespace CovidSharpUi.ViewModels
             // Midwest states
             sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.IA));
             sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.IL));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.IN));
             sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MI));
             sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MN));
             sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MO));
@@ -359,8 +362,8 @@ namespace CovidSharpUi.ViewModels
             sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MD));
             sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NJ));
             sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NY));
-            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NY));
-            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NY));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.RI));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.PA));
             // Southern Border
             sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.AL));
             sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.AZ));
@@ -412,7 +415,7 @@ namespace CovidSharpUi.ViewModels
         }
         private List<OwidCountry> PerformSmallCountryFilter(List<OwidCountry> unfilteredCountries)
         {
-            var sortedCountries = unfilteredCountries.Where(country => country.Population > 20000000).ToList();
+            var sortedCountries = unfilteredCountries.Where(country => country.Population > 10000000.00).ToList();
             return sortedCountries;
         }
     }

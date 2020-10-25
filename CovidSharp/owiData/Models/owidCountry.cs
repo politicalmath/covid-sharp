@@ -78,7 +78,7 @@ namespace CovidSharp.owiData.Models
         [JsonProperty("total_cases")]
         public double TotalCases { get; set; }
 
-        [JsonProperty("new_ases")]
+        [JsonProperty("new_cases")]
         public double NewCases { get; set; }
 
         [JsonProperty("new_cases_smoothed")]

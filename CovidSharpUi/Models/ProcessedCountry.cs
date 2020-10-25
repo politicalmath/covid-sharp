@@ -2,6 +2,7 @@
 using CovidSharpUi.Enums;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -112,6 +113,10 @@ namespace CovidSharpUi.Models
                         foreach (OwidDay od in CoreCountryData.Data)
                         {
                             preProcess.Add(new CalculatedValue(namedMetric, Convert.ToDouble(od.TotalCases), od.Date));
+                            if(CoreCountryData.CountryName == "Germany")
+                            {
+                                Debug.WriteLine("Germany - " + od.DateString + " - positives - " + od.TotalCases + ", " + od.NewCases);
+                            }
                         }
                         break;
                     case Metrics.Tests:
