@@ -22,6 +22,8 @@ using static CovidSharp.Utils.CsvUtility;
 using System.Globalization;
 using CovidSharp.owiData.Models;
 using CovidSharp.owiData;
+using CovidSharp.CdcVaccine.Models;
+using Newtonsoft.Json;
 
 namespace CovidSharpUi.ViewModels
 {
@@ -82,6 +84,10 @@ namespace CovidSharpUi.ViewModels
         public RelayCommand PickExportFolderCommand { get; private set; }
         public RelayCommand ExportDataCommand { get; private set; }
 
+        //Vaccine data management
+        public RelayCommand SelectVaccineSourceFolderCommand { get; private set; }
+        public RelayCommand ExportVaccineDataCommand { get; private set; }
+
         public MainViewModel()
         {
             csvWriter = new CsvUtility();
@@ -110,6 +116,9 @@ namespace CovidSharpUi.ViewModels
             ParseDataCommand = new RelayCommand(new Action(ProcessData), CanExecuteProcessDataCommand);
             PickExportFolderCommand = new RelayCommand(new Action(PickExportFolder), CanExecuteExportDataCommand);
             ExportDataCommand = new RelayCommand(new Action(ExportData), CanExecuteExportDataCommand);
+
+            SelectVaccineSourceFolderCommand = new RelayCommand(new Action(LoadVaccineData), CanExecuteExportDataCommand);
+            ExportVaccineDataCommand = new RelayCommand(new Action(ExportVaccineData), CanExecuteExportDataCommand);
         }
 
         private bool CanExecuteGetDataCommand()
@@ -135,6 +144,9 @@ namespace CovidSharpUi.ViewModels
                     newState.CovidData = rawStateData.FindAll(sd => sd.State.ToString().ToLower() == newState.StateBase.Code.ToString().ToLower());
                     StateData.Add(newState);
                 }
+
+                // Add the vaccine data here
+                // Send in a StateData value and then add the values to the state data day by day
 
                 if (SortStatesByRegion)
                 {
@@ -417,6 +429,239 @@ namespace CovidSharpUi.ViewModels
         {
             var sortedCountries = unfilteredCountries.Where(country => country.Population > 10000000.00).ToList();
             return sortedCountries;
+        }
+
+        // Vaccine data management
+
+        private List<VaccineSet> RawVaccineData = new List<VaccineSet>();
+        private List<VaccineState> StateVaccineData = new List<VaccineState>();
+        private List<ProcessedVaccine> ProcessedVaccineData = new List<ProcessedVaccine>();
+
+        public async void LoadVaccineData()
+        {
+            Status = "Loading Vaccine Data";
+            // Step 1: select folder for vaccine data 
+            Windows.Storage.ApplicationDataContainer localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
+
+            var picker = new Windows.Storage.Pickers.FolderPicker();
+            picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Desktop;
+            picker.FileTypeFilter.Add("*");
+
+            var vaccineFolder = await picker.PickSingleFolderAsync();
+            if (vaccineFolder != null)
+            {
+                Windows.Storage.AccessCache.StorageApplicationPermissions.FutureAccessList.AddOrReplace("VaccineFolder", vaccineFolder);
+            }
+
+            // Step 2: suck in all the data
+            var vaccineFiles = await vaccineFolder.GetFilesAsync();
+            foreach (StorageFile file in vaccineFiles)
+            {
+                // Suck in the data and add it to the list
+                string vaccineData = await Windows.Storage.FileIO.ReadTextAsync(file);
+                var vaccineDay = JsonConvert.DeserializeObject<VaccineSet>(vaccineData);
+                if(vaccineDay != null) { 
+                    vaccineDay.VaccineSetDate = vaccineDay.VaccineDay?.First()?.DataDate!= null ? vaccineDay.VaccineDay.First().DataDate : DateTime.Now;
+                    RawVaccineData.Add(vaccineDay);
+                }
+            }
+
+            //Step 3: Organize the data into state info
+            StateVaccineData.Clear();
+            var stateBaseInfo = StatesConstants.GetStatesList().Concat(StatesConstants.GetVaccineExtrasList());
+            
+            foreach (StateBase sb in stateBaseInfo)
+            {
+                var newState = new VaccineState(sb);
+                foreach (VaccineSet vs in RawVaccineData)
+                {
+                    var vaccineDay = vs.VaccineDay.First(vd => vd.StateCode.ToString().ToLower() == newState.StateBase.Code.ToString().ToLower());
+                    newState.VaccineData.Add(new VaccineDay(vaccineDay));
+                }
+                StateVaccineData.Add(newState);
+            }
+
+            if (SortStatesByRegion)
+            {
+                StateVaccineData = PerformStateVaccineSortByRegion(StateVaccineData);
+            }
+        }
+
+        public async void ExportVaccineData()
+        {
+            Status = "Processing data...";
+            ProcessedVaccineData.Clear();
+
+            List<Metrics> metrics = new List<Metrics>();
+            metrics.Add(Metrics.DosesDistributed);
+            metrics.Add(Metrics.DosesAdministered);
+            foreach (VaccineState vs in StateVaccineData)
+            {
+                // process 7 day average
+                var processedVacState = new ProcessedVaccine(vs);
+                var processed7DayAvg = new ProcessedVaccine(vs);
+                int rollingAvg = 7;
+                var parseSuccess = Int32.TryParse(RollingAverageNumber, out rollingAvg);
+                if (rollingAvg == 0) rollingAvg = 7;
+                processedVacState.ProcessDailyData(metrics, ProcessRollingAverage, rollingAvg, false);
+                //processed7DayAvg.ProcessDailyData(metrics, ProcessRollingAverage, rollingAvg, false);
+
+                // process 7 day average per 100k
+                var process7Day100K = new ProcessedVaccine(vs);
+                processedVacState.ProcessDailyData(metrics, ProcessRollingAverage, rollingAvg, true);
+               // process7Day100K.ProcessDailyData(metrics, ProcessRollingAverage, rollingAvg, true);
+
+
+                // process cume
+                var processCume = new ProcessedVaccine(vs);
+                processedVacState.ProcessCumulativeData(metrics, false);
+                //processCume.ProcessCumulativeData(metrics, false);
+
+                //process cume per 100k
+                var processCume100K = new ProcessedVaccine(vs);
+
+                processedVacState.ProcessCumulativeData(metrics, true);
+                //processCume100K.ProcessCumulativeData(metrics, true);
+
+                ProcessedVaccineData.Add(processedVacState);
+                //ProcessedVaccineData.Add(process7Day100K);
+                //ProcessedVaccineData.Add(processCume);
+                //ProcessedVaccineData.Add(processCume100K);
+            }
+            Status = "Vaccine Data Processed!";
+
+            isDataProcessed = true;
+
+            Status = "Exporting Vaccine Data";
+            // Step 3: output the data
+            var folder = await Windows.Storage.AccessCache.StorageApplicationPermissions.FutureAccessList.GetFolderAsync("ExportFolder");
+            DateTime startDate = new DateTime(2021, 1, 5);
+            Dictionary<string, List<CalculatedValue>> listOfFiles = ProcessedVaccineData?.FirstOrDefault()?.OutputFiles;
+
+            if (folder == null || listOfFiles == null) return;
+
+            foreach (KeyValuePair<string, List<CalculatedValue>> kvp in listOfFiles)
+            {
+                DateTime currentDate = startDate;
+
+                DateTime latestDate = listOfFiles.Values.FirstOrDefault().Max(cv => cv.Date);
+
+                StorageFile csvFile = await folder?.CreateFileAsync(kvp.Key + ".csv", Windows.Storage.CreationCollisionOption.ReplaceExisting);
+
+                using (CsvFileWriter dataWriter = new CsvFileWriter(await csvFile.OpenStreamForWriteAsync()))
+                {
+                    CsvRow headerRow = new CsvRow();
+                    headerRow.Add("Date");
+                    foreach (ProcessedVaccine pv in ProcessedVaccineData)
+                        headerRow.Add(pv.CoreVaccineStateData.StateBase.Code.ToString());
+                    dataWriter.WriteRow(headerRow);
+                    CsvRow lastRow = new CsvRow();
+                    while (currentDate.Date <= latestDate)
+                    {
+                        CsvRow nextRow = new CsvRow();
+                        nextRow.Add(currentDate.Date.ToString("MM/dd/yyyy", CultureInfo.InvariantCulture));
+
+                        foreach (ProcessedVaccine pv in ProcessedVaccineData)
+                        {
+                            var calcVals = pv.OutputFiles[kvp.Key].FirstOrDefault(calcv => calcv.Date.Date == currentDate.Date);
+                            if (calcVals != null)
+                                nextRow.Add(calcVals.Value.ToString("F3", CultureInfo.InvariantCulture));
+                        }
+                        if (nextRow.Count == 1)
+                        {
+                            lastRow[0] = nextRow[0];
+                            dataWriter.WriteRow(lastRow);
+                        }
+                        else
+                        {
+                            dataWriter.WriteRow(nextRow);
+                            lastRow = nextRow;
+                        }
+                        currentDate = currentDate + new TimeSpan(1, 0, 0, 0);
+                    }
+                }
+            }
+
+            Status = "Vaccine Data Exported!";
+        }
+        
+        private List<VaccineState> PerformStateVaccineSortByRegion(List<VaccineState> unsortedStates)
+        {
+            List<VaccineState> sortedStates = new List<VaccineState>();
+            // Midwest states
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.IA));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.IL));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.IN));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MI));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MN));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MO));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.OH));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.WI));
+            // Mountain States
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.CO));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.ID));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NV));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.UT));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.WY));
+            // Northeast States
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.CT));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.DC));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.DE));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MA));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MD));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NJ));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NY));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.RI));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.PA));
+            // Southern Border
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.AL));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.AZ));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.CA));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.FL));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.LA));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MS));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NM));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.TX));
+
+            // Mid South
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.AR));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.GA));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.KY));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NC));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.SC));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.TN));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.VA));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.WV));
+
+            // Plain States
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.KS));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.MT));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.ND));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NE));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.OK));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.SD));
+
+            //West Coast
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.CA));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.OR));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.WA));
+
+            // Upper Northeast + AK + HI
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.NH));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.VT));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.ME));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.AK));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.HI));
+
+            // Non-State Entities
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.BP2));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.DD2));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.VA2));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.LTC));
+            sortedStates.Add(unsortedStates.FirstOrDefault(s => s.StateBase.Code == StateCode.IH2));
+
+            return sortedStates;
+
         }
     }
 

@@ -14,6 +14,8 @@ namespace CovidSharpUi.Enums
         PercentPositive,
         HospitalCurrent,
         HospitalNew, 
-        CaseJerk
+        CaseJerk,
+        DosesDistributed,
+        DosesAdministered
     }
 }

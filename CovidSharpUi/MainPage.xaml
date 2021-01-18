@@ -32,9 +32,11 @@
                 <CheckBox x:Name="onlyBigCountries" Content="Large Countries Only (+20M)" IsChecked="{x:Bind Mode=TwoWay, Path=ViewModel.FilterSmallCountries}"/>
 
                 <Button Content="Get Data" Margin="0,16,0,0" HorizontalAlignment="Stretch" Command="{x:Bind ViewModel.GetDataCommand}"/>
+                <Button Content="Get Vaccine Data"  Margin="0,16,0,0" Command="{x:Bind Path=ViewModel.SelectVaccineSourceFolderCommand}"/>
                 <ProgressBar IsIndeterminate="True" Visibility="{x:Bind ViewModel.IsCollectingData, Converter={StaticResource BoolToVisibilityConverter}}" Margin="0,8,0,0" />
-                <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" FontSize="32" FontFamily="Segoe UI"/>
                 
+                <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" FontSize="32" FontFamily="Segoe UI"/>
+
             </StackPanel>
         </ScrollViewer>
         <ScrollViewer Grid.Column="1" >
@@ -69,6 +71,7 @@
                 <Button Content="Select Export Folder" Command="{x:Bind ViewModel.PickExportFolderCommand}"/>
                 <CheckBox x:Name="rollingAvgCheck_Copy" Content="export all data in single file" Margin="0,8,0,0"/>
                 <Button Content="Export Files" Margin="0,8,0,0" Command="{x:Bind ViewModel.ExportDataCommand}"/>
+                <Button Content="Export Vaccine Files" Margin="0,8,0,0" Command="{x:Bind Path=ViewModel.ExportVaccineDataCommand}"/>
             </StackPanel>
         </ScrollViewer>
 

@@ -126,6 +126,7 @@
     <Compile Include="Models\CalculatedValue.cs" />
     <Compile Include="Models\ProcessedCountry.cs" />
     <Compile Include="Models\ProcessedState.cs" />
+    <Compile Include="Models\ProcessedVaccines.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
   </ItemGroup>

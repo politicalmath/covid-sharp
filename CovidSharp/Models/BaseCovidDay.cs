@@ -11,5 +11,9 @@ namespace CovidSharp.Models
         public int Deaths { get; set; }
         public int Tests { get; set; }
         public double PercentPositive => Convert.ToDouble(Positive / Tests);
-    }
+        public int DosesDistributed { get; set; }
+        public int DosesAdministered { get; set; }
+        public int DosesDistributedPer100K { get; set; }
+        public int DosesAdministeredPer100K { get; set; }
+    }    
 }

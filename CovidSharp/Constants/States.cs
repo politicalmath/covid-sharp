@@ -71,5 +71,19 @@ namespace CovidSharp.Constants
             return stateInfo;
         }
 
+        public static List<StateBase> GetVaccineExtrasList()
+        {
+            var vaccineExtras = new List<StateBase>();
+            vaccineExtras.Add(new StateBase(StateName.BureauOfPrisons, StateCode.BP2, 0));
+            vaccineExtras.Add(new StateBase(StateName.DeptOfDefense, StateCode.DD2, 0));
+            vaccineExtras.Add(new StateBase(StateName.Micronesia, StateCode.FM, 0));
+            vaccineExtras.Add(new StateBase(StateName.IndianHealthSvc, StateCode.IH2, 0));
+            vaccineExtras.Add(new StateBase(StateName.LongTermCare, StateCode.LTC, 0));
+            vaccineExtras.Add(new StateBase(StateName.MarshallIslands, StateCode.MH, 0));
+            vaccineExtras.Add(new StateBase(StateName.RepublicOfPalau, StateCode.RP, 0));
+            vaccineExtras.Add(new StateBase(StateName.VeteransHealth, StateCode.VA2, 0));
+
+            return vaccineExtras;
+        }
     }
 }

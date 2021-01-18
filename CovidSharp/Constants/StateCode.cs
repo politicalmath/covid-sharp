@@ -62,6 +62,14 @@ namespace CovidSharp.Constants
         WI,
         WV,
         WY,
-        None
+        None,
+        BP2,
+        DD2,
+        FM,
+        IH2,
+        LTC,
+        MH,
+        RP,
+        VA2
     }
 }

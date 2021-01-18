@@ -61,6 +61,14 @@ namespace CovidSharp.Constants
         Washington,
         Wisconsin,
         WestVirginia,
-        Wyoming
+        Wyoming,
+        BureauOfPrisons,
+        DeptOfDefense,
+        Micronesia,
+        IndianHealthSvc,
+        LongTermCare,
+        MarshallIslands,
+        RepublicOfPalau,
+        VeteransHealth
     }
 }
