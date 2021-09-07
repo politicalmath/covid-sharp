@@ -63,5 +63,6 @@ namespace CovidSharp.CovidTrack
         #endregion 
         
         private const string dateSub = "{date}";
+
     }
 }

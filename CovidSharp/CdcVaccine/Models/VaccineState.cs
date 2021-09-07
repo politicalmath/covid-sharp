@@ -24,6 +24,9 @@ namespace CovidSharp.CdcVaccine.Models
         public int DosesAdministered { get; set; }
         public int DistributedPer100K { get; set; }
         public int AdministeredPer100K { get; set; }
+        public double PercentAdultVaccinated { get; set; }
+        public double PercentSeniorsVaccinated { get; set; }
+
 
         public VaccineDay(VaccineStateDay vsd)
         {
@@ -32,6 +35,12 @@ namespace CovidSharp.CdcVaccine.Models
             DosesAdministered = vsd.DosesAdministered;
             DistributedPer100K = vsd.DistributedPer100K;
             AdministeredPer100K = vsd.AdministeredPer100K;
+            PercentAdultVaccinated = 0;
+            PercentSeniorsVaccinated = 0;
+            if(vsd.Dose1Admin18PlusPct.HasValue)
+                PercentAdultVaccinated = vsd.Dose1Admin18PlusPct.Value;
+            if(vsd.Dose1Admin65PlusPct.HasValue)
+                PercentSeniorsVaccinated = vsd.Dose1Admin65PlusPct.Value; 
         }
     }
 }

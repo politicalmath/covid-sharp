@@ -42,6 +42,9 @@ namespace CovidSharp.CdcVaccine
         [JsonProperty("LongName")]
         public string StateName { get; set; }
 
+        [JsonProperty("Census2019")]
+        public int StatePopulation { get; set; }
+
         [JsonProperty("Doses_Distributed")]
         public int DosesDistributed { get; set; }
 
@@ -54,19 +57,81 @@ namespace CovidSharp.CdcVaccine
         [JsonProperty("Admin_Per_100K")]
         public int AdministeredPer100K { get; set; }
 
-        [JsonProperty("Census2019")]
-        public int StatePopulation { get; set; }
+        // The CDC started tracking dose numbers on the 12th
+        [JsonProperty("Administered_Dose1")]
+        public int? Dose1Administered { get; set; }
 
+        [JsonProperty("Administered_Dose1_Per_100K")]
+        public int? Dose1AdministeredPer100K { get; set; }
+
+        [JsonProperty("Administered_Dose2")]
+        public int? Dose2Administered { get; set; }
+
+        [JsonProperty("Administered_Dose2_Per_100K")]
+        public int? Dose2AdministeredPer100K { get; set; }
+
+        // The CDC Tracked manifacturing for about 5 days
         [JsonProperty("Administered_Moderna")]
         public int? DosesAdministeredModerna { get; set; }
-
+        
         [JsonProperty("Administered_Pfizer")]
         public int? DosesAdministeredPfizer { get; set; }
+
+        [JsonProperty("Administered_Janssen")]
+        public int? DosesAdministeredJanssen { get; set; }
 
         [JsonProperty("Administered_Unk_Manuf")]
         public int? DosesAdministeredUnknown { get; set; }
 
         [JsonProperty("Ratio_Admin_Dist")]
         public double? DistributedAdminRatio { get; set; }
+
+        [JsonProperty("Administered_Dose1_Pop_Pct")]
+        public double? Dose1AdminPopulationPct { get; set; }
+        
+        [JsonProperty("Administered_Dose2_Pop_Pct")]
+        public double? Dose2AdminPopulationPct { get; set; }
+        
+        [JsonProperty("Administered_Dose1_Recip_18Plus")]
+        public int? Dose1Admin18Plus { get; set; }
+        
+        [JsonProperty("Administered_Dose1_Recip_18PlusPop_Pct")]
+        public double? Dose1Admin18PlusPct { get; set; }
+        
+        [JsonProperty("Administered_18Plus")]
+        public int? Admin18Plus { get; set; }
+        
+        [JsonProperty("Administered_Dose1_Recip_65Plus")]
+        public int? Dose1Admin65Plus { get; set; }
+        
+        [JsonProperty("Administered_Dose1_Recip_65PlusPop_Pct")]
+        public double? Dose1Admin65PlusPct { get; set; }
+        
+        [JsonProperty("Administered_65Plus")]
+        public int? Admin65Plus { get; set; }
+        
+        [JsonProperty("Administered_Dose2_Recip")]
+        public int? Dose2Admin { get; set; }
+        
+        [JsonProperty("Administered_Dose2_Recip_18Plus")]
+        public int? Dose2Admin18Plus { get; set; }
+        
+        [JsonProperty("Administered_Dose2_Recip_18PlusPop_Pct")]
+        public double? Dose2Admin18PlusPct { get; set; }
+        
+        [JsonProperty("Series_Complete_Pop_Pct")]
+        public double? SeriesCompletePopPct { get; set; }
+        
+        [JsonProperty("Series_Complete_18Plus")]
+        public int? SeriesComplete18Plus { get; set; }
+        
+        [JsonProperty("Series_Complete_18PlusPop_Pct")]
+        public double? SeriesComplete18PlusPct { get; set; }
+        
+        [JsonProperty("Series_Complete_65Plus")]
+        public int? SeriesComplete65Plus { get; set; }
+
+        [JsonProperty("Series_Complete_65PlusPop_Pct")]
+        public double? SeriesComplete65PlusPct { get; set; }
     }
 }
