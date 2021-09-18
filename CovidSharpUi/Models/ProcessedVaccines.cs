@@ -60,6 +60,20 @@ namespace CovidSharpUi.Models
                             }
                         }
                         break;
+                    case Metrics.SeriesCompleteAdultPct:
+                        namedMetric += "adultPctVaccinated";
+                        foreach (VaccineDay vs in CoreVaccineStateData.VaccineData)
+                        {
+                            allValues.Add(new CalculatedValue(namedMetric, vs.PercentAdultVaccinated, vs.Date));
+                        }
+                        break;
+                    case Metrics.SeriesCompleteSeniorPct:
+                        namedMetric += "seniorsPctVaccinated";
+                        foreach (VaccineDay vs in CoreVaccineStateData.VaccineData)
+                        {
+                            allValues.Add(new CalculatedValue(namedMetric, vs.PercentSeniorsVaccinated, vs.Date));
+                        }
+                        break;
                     default:
                         break;
                 }
@@ -111,6 +125,20 @@ namespace CovidSharpUi.Models
                             {
                                 preProcess.Add(new CalculatedValue(namedMetric, Convert.ToDouble(vs.DosesDistributed), vs.Date));
                             }
+                        }
+                        break;
+                    case Metrics.SeriesCompleteAdultPct:
+                        namedMetric += "adultPctVaccinated";
+                        foreach (VaccineDay vs in CoreVaccineStateData.VaccineData)
+                        {
+                            preProcess.Add(new CalculatedValue(namedMetric, vs.PercentAdultVaccinated, vs.Date));
+                        }
+                        break;
+                    case Metrics.SeriesCompleteSeniorPct:
+                        namedMetric += "seniorsPctVaccinated";
+                        foreach (VaccineDay vs in CoreVaccineStateData.VaccineData)
+                        {
+                            preProcess.Add(new CalculatedValue(namedMetric, vs.PercentSeniorsVaccinated, vs.Date));
                         }
                         break;
                     default:

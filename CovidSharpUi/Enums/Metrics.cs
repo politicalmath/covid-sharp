@@ -16,6 +16,14 @@ namespace CovidSharpUi.Enums
         HospitalNew, 
         CaseJerk,
         DosesDistributed,
-        DosesAdministered
+        DosesAdministered,
+        Dose1Adults,
+        Dose1Seniors,
+        Does1AdultPopPct,
+        Dose1SeniorPopPct,
+        SeriesCompleteAdults,
+        SeriesCompleteSeniors,
+        SeriesCompleteAdultPct,
+        SeriesCompleteSeniorPct
     }
 }
