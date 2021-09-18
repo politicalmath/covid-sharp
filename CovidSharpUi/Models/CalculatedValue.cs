@@ -16,6 +16,8 @@ namespace CovidSharpUi.Models
         public CalculatedValue(string metricName, double value, DateTime date)
         {
             MetricName = metricName;
+            if (value < 0)
+                value = 0;
             Value = value;
             Date = date;
         }

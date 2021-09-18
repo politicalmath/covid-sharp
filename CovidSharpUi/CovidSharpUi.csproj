@@ -125,10 +125,14 @@
     </Compile>
     <Compile Include="Models\CalculatedValue.cs" />
     <Compile Include="Models\ProcessedCountry.cs" />
+    <Compile Include="Models\ProcessedJhState.cs" />
     <Compile Include="Models\ProcessedState.cs" />
     <Compile Include="Models\ProcessedVaccines.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\JohnsHopkinsDataService.cs" />
+    <Compile Include="ViewModels\JohnsHopkinsViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
+    <Compile Include="ViewModels\NytViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">

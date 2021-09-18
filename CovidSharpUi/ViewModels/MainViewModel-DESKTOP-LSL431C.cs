@@ -24,7 +24,6 @@ using CovidSharp.owiData.Models;
 using CovidSharp.owiData;
 using CovidSharp.CdcVaccine.Models;
 using Newtonsoft.Json;
-using Windows.Storage.AccessCache;
 
 namespace CovidSharpUi.ViewModels
 {
@@ -37,9 +36,6 @@ namespace CovidSharpUi.ViewModels
         private OwidService owidService { get; set; }
         private List<ProcessedState> ProcessedStateData { get; set; }
         private List<ProcessedCountry> ProcessedCountryData { get; set; }
-        public JohnsHopkinsViewModel JohnHopkinsVM { get; set; }
-
-        public NytViewModel NewYorkTimesVM { get; set; }
 
 
         public bool UseCovidDataSource { get; set; }
@@ -82,17 +78,6 @@ namespace CovidSharpUi.ViewModels
             }
         }
 
-        private string _exportFolderPath { get; set; }
-        public string ExportFolderPath
-        {
-            get { return _exportFolderPath; }
-            set
-            {
-                _exportFolderPath = value;
-                RaisePropertyChanged("ExportFolderPath");
-            }
-        }
-
         public RelayCommand GetDataCommand { get; private set; }
         public RelayCommand ParseDataCommand { get; private set; }
 
@@ -102,8 +87,6 @@ namespace CovidSharpUi.ViewModels
         //Vaccine data management
         public RelayCommand SelectVaccineSourceFolderCommand { get; private set; }
         public RelayCommand ExportVaccineDataCommand { get; private set; }
-
-        public RelayCommand BackfillJhData { get; private set; }
 
         public MainViewModel()
         {
@@ -129,9 +112,6 @@ namespace CovidSharpUi.ViewModels
             ProcessRollingAverage = true;
             UseDailyData = false;
 
-            JohnHopkinsVM = new JohnsHopkinsViewModel();
-            NewYorkTimesVM = new NytViewModel();
-
             GetDataCommand = new RelayCommand(new Action(GetData), CanExecuteGetDataCommand);
             ParseDataCommand = new RelayCommand(new Action(ProcessData), CanExecuteProcessDataCommand);
             PickExportFolderCommand = new RelayCommand(new Action(PickExportFolder), CanExecuteExportDataCommand);
@@ -139,28 +119,11 @@ namespace CovidSharpUi.ViewModels
 
             SelectVaccineSourceFolderCommand = new RelayCommand(new Action(LoadVaccineData), CanExecuteExportDataCommand);
             ExportVaccineDataCommand = new RelayCommand(new Action(ExportVaccineData), CanExecuteExportDataCommand);
-
-            BackfillJhData = new RelayCommand(new Action(BackfillJohnsHopkinsData), true);
-            Init();
-        }
-
-        public async Task Init()
-        {
-            var exFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync("ExportFolder");
-            if (exFolder != null)
-                ExportFolderPath = exFolder.Path;
-            else
-                ExportFolderPath = "no Johns Hopkins folder selected";
         }
 
         private bool CanExecuteGetDataCommand()
         {
             return true;
-        }
-
-        public async void BackfillJohnsHopkinsData()
-        {
-            JohnHopkinsVM.CtpToJHTransition(StateData);
         }
 
         public async void GetData()
@@ -241,7 +204,8 @@ namespace CovidSharpUi.ViewModels
                     var processedState = new ProcessedState(s);
                     if (UseDailyData)
                     {
-                        var parseSuccess = Int32.TryParse(RollingAverageNumber, out int rollingAvg);
+                        int rollingAvg = 7;
+                        var parseSuccess = Int32.TryParse(RollingAverageNumber, out rollingAvg);
                         if (rollingAvg == 0) rollingAvg = 7;
                         processedState.ProcessDailyData(metrics, ProcessRollingAverage, rollingAvg, ProcessPerCapita);
                     }
@@ -295,12 +259,7 @@ namespace CovidSharpUi.ViewModels
             var folder = await picker.PickSingleFolderAsync();
             if (folder != null)
             {
-                StorageApplicationPermissions.FutureAccessList.AddOrReplace("ExportFolder", folder);
-                ExportFolderPath = folder.Path;
-                NewYorkTimesVM.ExportFolder = folder;
-            } else
-            {
-                ExportFolderPath = "no export folder selected";
+                Windows.Storage.AccessCache.StorageApplicationPermissions.FutureAccessList.AddOrReplace("ExportFolder", folder);
             }
         }
 
@@ -313,7 +272,7 @@ namespace CovidSharpUi.ViewModels
         {
             Status = "Exporting Data...";
 
-            var folder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync("ExportFolder");
+            var folder = await Windows.Storage.AccessCache.StorageApplicationPermissions.FutureAccessList.GetFolderAsync("ExportFolder");
 
             //  https://docs.microsoft.com/en-us/windows/uwp/files/quickstart-using-file-and-folder-pickers
 
@@ -482,7 +441,7 @@ namespace CovidSharpUi.ViewModels
         {
             Status = "Loading Vaccine Data";
             // Step 1: select folder for vaccine data 
-            //Windows.Storage.ApplicationDataContainer localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
+            Windows.Storage.ApplicationDataContainer localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
 
             var picker = new Windows.Storage.Pickers.FolderPicker();
             picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Desktop;
@@ -492,7 +451,7 @@ namespace CovidSharpUi.ViewModels
             if (vaccineFolder != null)
             {
                 Windows.Storage.AccessCache.StorageApplicationPermissions.FutureAccessList.AddOrReplace("VaccineFolder", vaccineFolder);
-            } else { return; }
+            }
 
             // Step 2: suck in all the data
             var vaccineFiles = await vaccineFolder.GetFilesAsync();
@@ -522,7 +481,10 @@ namespace CovidSharpUi.ViewModels
                 StateVaccineData.Add(newState);
             }
 
-            StateVaccineData = PerformStateVaccineSortByRegion(StateVaccineData);
+            if (SortStatesByRegion)
+            {
+                StateVaccineData = PerformStateVaccineSortByRegion(StateVaccineData);
+            }
         }
 
         public async void ExportVaccineData()
@@ -533,9 +495,6 @@ namespace CovidSharpUi.ViewModels
             List<Metrics> metrics = new List<Metrics>();
             metrics.Add(Metrics.DosesDistributed);
             metrics.Add(Metrics.DosesAdministered);
-            metrics.Add(Metrics.SeriesCompleteAdultPct);
-            metrics.Add(Metrics.SeriesCompleteSeniorPct);
-
             foreach (VaccineState vs in StateVaccineData)
             {
                 // process 7 day average

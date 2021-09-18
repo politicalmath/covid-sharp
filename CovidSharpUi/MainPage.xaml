@@ -15,8 +15,8 @@
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="54*"/>
-            <ColumnDefinition Width="69*"/>
-            <ColumnDefinition Width="133*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="54*"/>
         </Grid.ColumnDefinitions>
         <ScrollViewer >
             <StackPanel Margin="8">
@@ -32,14 +32,23 @@
                 <CheckBox x:Name="onlyBigCountries" Content="Large Countries Only (+20M)" IsChecked="{x:Bind Mode=TwoWay, Path=ViewModel.FilterSmallCountries}"/>
 
                 <Button Content="Get Data" Margin="0,16,0,0" HorizontalAlignment="Stretch" Command="{x:Bind ViewModel.GetDataCommand}"/>
-                <Button Content="Get Vaccine Data"  Margin="0,16,0,0" Command="{x:Bind Path=ViewModel.SelectVaccineSourceFolderCommand}"/>
+                <Button Content="Get Vaccine Data" Margin="0,16,0,0" HorizontalAlignment="Stretch" Command="{x:Bind Path=ViewModel.SelectVaccineSourceFolderCommand}"/>
+                <Button Content="Get Johns Hopkins Data" Margin="0,16,0,0" HorizontalAlignment="Stretch" Command="{x:Bind Path=ViewModel.JohnHopkinsVM.SelectJhSourceCommand}"/>
+                <Button Content="Get County Pop Data" Margin="0,16,0,0" HorizontalAlignment="Stretch" Command="{x:Bind Path=ViewModel.NewYorkTimesVM.SelectNytSourceCommand}"/>
                 <ProgressBar IsIndeterminate="True" Visibility="{x:Bind ViewModel.IsCollectingData, Converter={StaticResource BoolToVisibilityConverter}}" Margin="0,8,0,0" />
-                
-                <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" FontSize="32" FontFamily="Segoe UI"/>
 
+                <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" FontSize="32" Margin="0,16,0,0" FontFamily="Segoe UI"/>
+                <TextBlock Text="{x:Bind ViewModel.JohnHopkinsVM.Status, Mode=OneWay}" TextWrapping="Wrap" FontSize="32" Margin="0,16,0,0" FontFamily="Segoe UI"/>
+                <TextBlock Text="{x:Bind ViewModel.NewYorkTimesVM.NytProcessStatus, Mode=OneWay}" TextWrapping="Wrap" FontSize="32" Margin="0,16,0,0" FontFamily="Segoe UI"/>
+                <TextBlock Text="{x:Bind ViewModel.JohnHopkinsVM.JHFolderLocation, Mode=OneWay}" TextWrapping="Wrap" FontFamily="Segoe UI" Margin="0,16,0,0"/>
+
+                <TextBlock Text="{x:Bind ViewModel.NewYorkTimesVM.NytFolderLocation, Mode=OneWay}" TextWrapping="Wrap" FontFamily="Segoe UI" Margin="0,16,0,0"/>
+                
+                <TextBlock Text="{x:Bind ViewModel.ExportFolderPath, Mode=OneWay}" TextWrapping="Wrap" FontFamily="Segoe UI" Margin="0,16,0,0"/>
+                
             </StackPanel>
         </ScrollViewer>
-        <ScrollViewer Grid.Column="1" >
+        <ScrollViewer Grid.Column="1" Visibility="Collapsed" >
             <StackPanel Margin="8">
                 <TextBlock x:Name="Colation" Text="Manage Data" TextWrapping="Wrap" FontFamily="Segoe UI Semibold" FontSize="24"/>
                 <TextBlock Text="Include the following metrics in the export" TextWrapping="Wrap" FontFamily="Segoe UI" FontSize="16" Margin="0,16,0,0"/>
@@ -72,6 +81,11 @@
                 <CheckBox x:Name="rollingAvgCheck_Copy" Content="export all data in single file" Margin="0,8,0,0"/>
                 <Button Content="Export Files" Margin="0,8,0,0" Command="{x:Bind ViewModel.ExportDataCommand}"/>
                 <Button Content="Export Vaccine Files" Margin="0,8,0,0" Command="{x:Bind Path=ViewModel.ExportVaccineDataCommand}"/>
+
+                <Button Content="Export John Hopkins Data" Margin="0,8,0,0" Command="{x:Bind Path=ViewModel.JohnHopkinsVM.ParseAndExportJhDataCommand}"/>
+                <Button Content="Export NYT Data" Margin="0,8,0,0" Command="{x:Bind Path=ViewModel.NewYorkTimesVM.ParseAndExportNytDataCommand}"/>
+
+                <Button Content="Backfill John Hopkins Data" Margin="0,8,0,0" Command="{x:Bind Path=ViewModel.BackfillJhData}"/>
             </StackPanel>
         </ScrollViewer>
 
